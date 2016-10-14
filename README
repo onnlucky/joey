@@ -1,0 +1,16 @@
+# Joey, A Perhaps Conscious Robot
+
+This is an implementation of a very simplistic reinforcement[1] based learning
+system. It learns how to get rewards in a square based world.
+
+See my blog about it here: http://leverlabs.io/blog20161014/
+
+The main feature is a set of plans with scores. And a memory of past inputs and
+past actions. If a plan leads to a reward, it adds to its score. If a plan
+leads to an unexpected state, it leads to surprise and the plan is demoted,
+perhaps removed.
+
+On any reward, past history is made into the shortest plan that does not exist
+yet. Minus some plans that are too random to be useful.
+
+[1]: https://en.wikipedia.org/wiki/Reinforcement_learning

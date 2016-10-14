@@ -3,6 +3,8 @@
 //author: Onne Gorter
 //license: CC0
 
+/// an opiniated library to enhances the default js environment
+
 // simple assert
 function assert(c, desc) {
     if (c) return
@@ -11,7 +13,7 @@ function assert(c, desc) {
     throw e
 }
 
-// check if intact
+// check if sane
 assert(typeof(setInterval) === "function")
 
 // TAU is around the unit circle once: starting at x=1,y=0, clockwise to x=0,y=-1 (at TAU4)
@@ -24,23 +26,6 @@ const TAU16 = Math.PI / 8.0
 // reasonable maximum/minimum for js integer numbers
 const MAX_NUMBER = Math.pow(2, 51)
 const MIN_NUMBER = -Math.pow(2, 51)
-
-// lets not type in Math.obvious
-const sin = Math.sin
-const asin = Math.asin
-const cos = Math.cos
-const acos = Math.acos
-const tan = Math.tan
-const atan = Math.atan
-const atan2 = Math.atan2
-const round = Math.round
-const floor = Math.floor
-const ceil = Math.ceil
-const min = Math.min
-const max = Math.max
-const sqrt = Math.sqrt
-const pow = Math.pow
-const abs = Math.abs
 
 function isBool(o) { return typeof o === "boolean" }
 function isNumber(o) { return typeof o === "number" && !isNaN(o) }
@@ -64,7 +49,7 @@ function timeFromMillis(millis) { return millis / 1000.0 }
 // compare two floating point numbers to see if they are the same with a tolarance
 function fequals(f1, f2, within) {
     within = within || 0.1
-    return abs(f1 - f2) < within
+    return Math.abs(f1 - f2) < within
 }
 
 // modulo that results from 0..m exclusive (instead of -m .. m of just %)
@@ -121,12 +106,12 @@ function angleclamp(a, max) {
 
 // pythagoras distance without square root
 function dist2(x1, x2, y1, y2) {
-    return pow(x1 - x2, 2) + pow(y1 - y2, 2)
+    return Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2)
 }
 
 // pythagoras distance
 function dist(x1, x2, y1, y2) {
-    return sqrt(dist2(x1, x2, y1, y2))
+    return Math.sqrt(dist2(x1, x2, y1, y2))
 }
 
 // distance between a line and a point without square root
@@ -141,7 +126,7 @@ function linePointDist2(lx1, ly1, lx2, ly2, px, py) {
 
 // distance between a line and a point
 function linePointDist(lx1, ly1, lx2, ly2, px, py) {
-    return sqrt(linePointDist2(lx1, ly1, lx2, ly2, px, py))
+    return Math.sqrt(linePointDist2(lx1, ly1, lx2, ly2, px, py))
 }
 
 // check if two rays intersect
@@ -168,6 +153,7 @@ assert(rnd(1, 2) >= 1)
 assert(rnd(2, 1) >= 1)
 
 if (!Array.prototype.each) Array.prototype.each = Array.prototype.forEach
+
 if (!Array.prototype.equals) {
     Array.prototype.equals = function equals(other) {
         if (this.length !== other.length) return false
@@ -180,16 +166,6 @@ if (!Array.prototype.equals) {
         }
         return true
     }
-}
-
-if (!Array.prototype.remove) {
-    Array.prototype.remove = function remove(item) {
-        var at = this.indexOf(item)
-        if (at < 0) return null
-        this.splice(at, 1)
-        return this
-    }
-    assert([1,2,3,4,3].remove(3).equals([1,2,4,3]))
 }
 
 if (!Array.prototype.sum) {
@@ -226,6 +202,17 @@ if (!Object.forEach) {
         })
     }
 }
+if (!Object.each) Object.each = Object.forEach
+
+if (!Array.prototype.remove) {
+    Array.prototype.remove = function remove(item) {
+        var at = this.indexOf(item)
+        if (at < 0) return null
+        this.splice(at, 1)
+        return this
+    }
+    assert([1,2,3,4,3].remove(3).equals([1,2,4,3]))
+}
 
 if (!Array.prototype.shuffle) {
     Array.prototype.shuffle = function shuffle() {
@@ -241,8 +228,63 @@ if (!Array.prototype.shuffle) {
     assert(test.shuffle().indexOf(4) >= 0)
 }
 
+function stablesortcmp(l, r) { return l > r }
+
+function stablesortpass(buf1, buf2, cmp, chunk, len) {
+    var i = 0
+    var chunk2 = chunk * 2
+
+    // for all chunks in the list, merge them
+    for (var l = 0; l < len; l += chunk2) {
+        var r = l + chunk
+        var e = r + chunk
+        if (r > len) r = len
+        if (e > len) e = len
+        // now we have the left start, right start, and end
+
+        var li = l
+        var ri = r
+        while (true) {
+            if (li < r && ri < e) {
+                var le = buf1[li]
+                var re = buf1[ri]
+                if (cmp(le, re) <= 0) { buf2[i++] = le; li++ } else { buf2[i++] = re; ri++ }
+            } else if (li < r) {
+                buf2[i++] = buf1[li++]
+            } else if (ri < e) {
+                buf2[i++] = buf1[ri++]
+            } else {
+                break
+            }
+        }
+    }
+}
+
+function stablesort(ls, cmp) {
+    var len = ls.length
+    if (len <= 1) return ls
+    if (!cmp) cmp = stablesortcmp
+    var buf1 = ls
+    var buf2 = new Array(len)
+    for (var chunk = 1; chunk < len; chunk *= 2) {
+        stablesortpass(buf1, buf2, cmp, chunk, len)
+        var tmp = buf1; buf1 = buf2; buf2 = tmp // swap
+    }
+    if (buf1 !== ls) for (var i = 0; i < len; i++) ls[i] = buf1[i]
+    return ls
+}
+
+assert(stablesort([2, 1]).equals([1, 2]))
+assert(stablesort([3, 1, -200, 2]).equals([-200, 1, 2, 3]))
+assert(stablesort([10, 3, 1, -200, 2]).equals([-200, 1, 2, 3, 10]))
+
+if (!Array.prototype.stablesort) {
+    Array.prototype.stablesort = function(cmp) { return stablesort(this, cmp) }
+}
+
 // nodejs and running with `node [options] lib.js others.js ...` run as browser would do <script> tags
 // NOTE: this will not work: --someoption lol.js, workaround with --someoption=lol.js
+// TODO timers are broken because something in setTimeout, setInterval is not closing over properly
 if (typeof(process) !== "undefined" && process.argv) {
     var fs = null
     var vm = null
@@ -256,11 +298,10 @@ if (typeof(process) !== "undefined" && process.argv) {
             if (file !== "lib.js" && !file.endsWith("/lib.js")) break
             fs = require("fs")
             vm = require("vm")
-            context = vm.createContext({console, setTimeout, clearTimeout, setInterval, clearInterval})
+            context = vm.createContext({console, require, setTimeout, clearTimeout, setInterval, clearInterval})
         }
         if (!file.startsWith("/")) file = __dirname +"/"+ file
         //console.log("loading:", file)
         vm.runInContext(fs.readFileSync(file), context, {filename:file})
     }
 }
-
