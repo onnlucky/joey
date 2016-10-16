@@ -5,7 +5,8 @@
 
 // The simplest implementation of how some aspect of the brain might work with
 // regard to planning. And how that might lead to some kind of reflection and
-// thought and perhaps self awareness.
+// thought and perhaps self awareness. (None of that last sentence are in this
+// code.)
 //
 // How does it work? It keeps a memory of what it sees and what it does. When
 // it receives a reward, it will record from memory what lead to that reward.
@@ -20,12 +21,13 @@
 // * it ignores plans that see nothing for too long
 // * it discards plans that lead to too much surprise and too little reward
 //
-// It does not do a few things:
+// What it does not do:
 // * it does not match plans based on multiple steps
 // * it does not reevaluate plans at every step
 // * it does not have higher level plans, like strategies, instead it either
 //   has a plan, or it wanders about
 // * it does not receive pain, so no plans to avoid things
+// * it does not learn to predict and does not base plans on predicted futures
 //
 // This is basically a technique related to reinforced learning.
 // https://en.wikipedia.org/wiki/Reinforcement_learning
